@@ -1,6 +1,6 @@
 extern crate algorst;
 
-use algorst::MyBox;
+use algorst::boxes::MyBox;
 
 #[test]
 fn i32_works() {
