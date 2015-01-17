@@ -1,0 +1,5 @@
+[package]
+
+name = "algorst"
+version = "0.0.1"
+authors = ["David Johnston <dwtj@dwtj.me>"]
