@@ -27,6 +27,8 @@
 // as a guide while implementing this module.
 
 use std::ptr;
+use std::fmt;
+use std::io;
 
 type NodeIdx = usize;
 
@@ -37,6 +39,15 @@ pub struct Heap<T: Ord> {
 enum ChildType {
     Left,
     Right
+}
+
+impl fmt::String for ChildType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ChildType::Left  => write!(f, "Left"),
+            ChildType::Right => write!(f, "Right")
+        }
+    }
 }
 
 fn left_child(i: NodeIdx) -> NodeIdx {
@@ -72,14 +83,14 @@ impl<T: Ord> Heap<T> {
     /// an `Option<T>`. If there are no elements in the heap, then `None` is
     /// returned.
     pub fn pop(&mut self) -> Option<T> {
-        if (*self).store.len() > 0 { 
-            // Pop the root, swap in another element to replace it, then
-            // percolate down from the root.
-            let rv = (*self).store.swap_remove(0);
-            self.percolate_down(0);
-            Some(rv)
-        } else {
-            None
+        match (*self).store.len() {
+            0 => None,
+            1 => (*self).store.pop(),
+            _ => {
+                let rv = (*self).store.swap_remove(0);
+                (*self).percolate_down(0);
+                Some(rv)
+            }
         }
     }
 
@@ -98,7 +109,7 @@ impl<T: Ord> Heap<T> {
         if (*self).is_valid(idx) {
             if idx == 0 { None } else { Some((idx - 1) / 2) }
         } else {
-            panic!("Tried to find the parent idx of a node not in heap.")
+            panic!("Heap.parent({}): given `idx` not in the heap.", idx)
         }
     }
 
@@ -126,7 +137,8 @@ impl<T: Ord> Heap<T> {
                 None
             }
         } else {
-            panic!("Tried to find the left child idx of a node not in heap.")
+            panic!("Heap.child({}, {}): the given `idx` is not in the Heap.",
+                   ct, parent)
         }
     }
 
@@ -213,7 +225,7 @@ impl<T: Ord> Heap<T> {
     }
 
     fn is_valid(&self, idx: NodeIdx) -> bool {
-        (*self).store.len() <= idx
+        idx < (*self).store.len()
     }
 
     /// Swaps the data stored at the two inciated heap nodes.
