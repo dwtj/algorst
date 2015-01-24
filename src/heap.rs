@@ -13,6 +13,8 @@
 /// The heap can contain more than one element with the same priority. No
 /// guarantees are made about the order in which elements with equivalent
 /// priorities are popped from the queue.
+///
+/// The data sturcture can be output in Graphviz `.dot` format.
 
 // This data structure is implemented as a vector-backed binary heap. (The
 // parent-child relationships are therefore not stored via pointers between
@@ -26,9 +28,13 @@
 // 10 of O'Reilly book *Mastering Algorithms with C*. This chapter also served
 // as a guide while implementing this module.
 
+extern crate graphviz;
+
+use std;
 use std::ptr;
 use std::fmt;
 use std::io;
+//use graphviz as dot;
 
 type NodeIdx = usize;
 
@@ -94,9 +100,14 @@ impl<T: Ord> Heap<T> {
         }
     }
 
-    /// Returns the number of elemens in the heap.
+    /// Returns the number of elements in the heap.
     pub fn len(&self) -> usize {
         (*self).store.len()
+    }
+
+    /// Returns `true` iff there are no elements in the heap.
+    pub fn empty(&self) -> bool {
+        (*self).len() == 0
     }
 
 
@@ -243,10 +254,71 @@ impl<T: Ord> Heap<T> {
     }
 }
 
+pub type Edge = (NodeIdx, NodeIdx);
+
+impl graphviz::GraphWalk<'a> for Heap {
+    fn nodes(&'a self) -> graphviz::Nodes<'a, NodeIdx> {
+        let mut v = vec!((0..self.len()));
+        v.into_cow()
+    }
+
+    fn edges(&'a self) -> graphviz::Edges<'a, Edge> {
+        let mut v: Vec<Edge> = Vec::new(2 * self.len());
+        // Add an edge for each parent-child relationship in the heap.
+        for idx in (0..self.len()) {
+            match self.left_child(idx) {
+                Some(l) => v.push((idx, l)),
+                None    => ()
+            };
+            match self.right_child(idx) {
+                Some(r) => v.push((idx, r)),
+                None    => ()
+            };
+        }
+        v.to_cow();
+    }
+
+    fn source(&'a self, edge: &Edge) -> NodeIdx {
+        let &(s, _) = edge;
+        s
+    }
+
+    fn target(&'a self, edge: &Edge) -> NodeIdx {
+        let &(_, t) = edge;
+        t
+    }
+}
+
+pub trait Labeller<'a> {
+    fn graph_id(&'a self) -> graphviz::Id<'a> {
+        graphviz::Id::new("Heap").unwrap()
+    }
+
+    fn node_id(&'a self, n: &NodeIdx) -> graphviz::Id<'a> {
+        graphviz::Id::new(format!("{}", self.store[n])).unwrap()
+    }
+
+    fn node_label(&'a self, n: &NodeIdx) -> graphviz::LabelText<'a> {
+        graphviz::LabelText::LabelStr(format!("n{}", n))
+    }
+
+    fn edge_label(&'a self, e: &Edge) -> graphviz::LabelText<'a> {
+        graphviz::LabelText::LabelStr("")
+    }
+}
+
+
+
 /*
-impl<T: Ord> Clone for Heap<T> {
-    pub fn clone(&self) -> Heap<T> {
-        Heap { store: (*self).store.clone() }
+impl fmt::String for Heap {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ChildType::Left  => write!(f, "Left"),
+            ChildType::Right => write!(f, "Right")
+        }
+        if self.len() == 0 {
+            write!(f, "()")
+        }
     }
 }
 */
