@@ -1,8 +1,6 @@
-use std::rc::Rc;
-
 pub struct Node<T: Clone> {
     elem: T,
-    link: Rc<List<T>>,
+    link: Box<List<T>>,
 }
 
 //pub type List<T> = Option<Node<T>>;
@@ -31,16 +29,16 @@ impl <T: Clone> List<T> {
     }
 
     pub fn prepend(self, elem: T) -> Self {
-        let n = Node { elem: elem, link: Rc::new(self) };
-        List::Head(n)
+        List::Head(Node {
+            elem: elem,
+            link: box self
+        })
     }
 
-    /*
-    pub fn tail(&self) -> List<T> {
-        match *self {
+    pub fn tail(self) -> List<T> {
+        match self {
             List::Empty   => panic!(),
-            List::Head(ref n) => n.link.clone()
+            List::Head(n) => *n.link,
         }
     }
-    */
 }
