@@ -71,10 +71,10 @@ impl<T: Ord> Heap<T> {
 
     /// Adds the given element to the heap.
     pub fn push(&mut self, elem: T) {
-        let len = (*self).store.len();
-        (*self).store.push(elem);
+        let len = self.store.len();
+        self.store.push(elem);
         let insert_idx: NodeIdx = len as NodeIdx;
-        (*self).percolate_up(insert_idx);
+        self.percolate_up(insert_idx);
     }
 
     /// Removes from the heap an element with the largest priority of all in
@@ -82,12 +82,12 @@ impl<T: Ord> Heap<T> {
     /// an `Option<T>`. If there are no elements in the heap, then `None` is
     /// returned.
     pub fn pop(&mut self) -> Option<T> {
-        match (*self).store.len() {
+        match self.store.len() {
             0 => None,
-            1 => (*self).store.pop(),
+            1 => self.store.pop(),
             _ => {
-                let rv = (*self).store.swap_remove(0);
-                (*self).percolate_down(0);
+                let rv = self.store.swap_remove(0);
+                self.percolate_down(0);
                 Some(rv)
             }
         }
@@ -95,12 +95,12 @@ impl<T: Ord> Heap<T> {
 
     /// Returns the number of elements in the heap.
     pub fn len(&self) -> usize {
-        (*self).store.len()
+        self.store.len()
     }
 
     /// Returns `true` iff there are no elements in the heap.
     pub fn empty(&self) -> bool {
-        (*self).len() == 0
+        self.len() == 0
     }
 
 
@@ -110,7 +110,7 @@ impl<T: Ord> Heap<T> {
     ///
     /// The function panics if the given index is not valid.
     fn parent(&self, idx: NodeIdx) -> Option<NodeIdx> {
-        if (*self).is_valid(idx) {
+        if self.is_valid(idx) {
             if idx == 0 { None } else { Some((idx - 1) / 2) }
         } else {
             panic!("Heap.parent({}): given `idx` not in the heap.", idx)
@@ -118,11 +118,11 @@ impl<T: Ord> Heap<T> {
     }
 
     fn left_child(&self, parent: NodeIdx) -> Option<NodeIdx> {
-        (*self).child(ChildType::Left, parent)
+        self.child(ChildType::Left, parent)
     }
 
     fn right_child(&self, parent: NodeIdx) -> Option<NodeIdx> {
-        (*self).child(ChildType::Right, parent)
+        self.child(ChildType::Right, parent)
     }
 
     /// Takes the index of a node and returns the index of indicated child.
@@ -130,12 +130,12 @@ impl<T: Ord> Heap<T> {
     ///
     /// The function panics if the given index is not valid.
     fn child(&self, ct: ChildType, parent: NodeIdx) -> Option<NodeIdx> {
-        if (*self).is_valid(parent) {
+        if self.is_valid(parent) {
             let child: NodeIdx = match ct {
                 ChildType::Left  => left_child(parent),
                 ChildType::Right => right_child(parent)
             };
-            if child < (*self).store.len() {
+            if child < self.store.len() {
                 Some(child) }
             else {
                 None
@@ -150,7 +150,7 @@ impl<T: Ord> Heap<T> {
     /// heap until the heap property has been restored all along this node's
     /// ancestor path.
     fn percolate_up(&mut self, child: NodeIdx) {
-        let maybe_parent = (*self).parent(child);
+        let maybe_parent = self.parent(child);
         match maybe_parent {
             None => {
                 // Do nothing: The given `child` has no parent because it is
@@ -158,9 +158,9 @@ impl<T: Ord> Heap<T> {
                 return
             },
             Some(parent) => {
-                if (*self).is_violating(parent, child) {
-                    (*self).swap(parent, child);
-                    (*self).percolate_up(parent)
+                if self.is_violating(parent, child) {
+                    self.swap(parent, child);
+                    self.percolate_up(parent)
                 } else {
                     // Do nothing: the two nodes are already ordered correctly.
                     return
@@ -177,20 +177,20 @@ impl<T: Ord> Heap<T> {
     /// re-heapified, the only element which may be violating the heap-property
     /// is the node indicated by the given `NodeIdx`.)
     fn percolate_down(&mut self, parent: NodeIdx) {
-        match ((*self).left_child(parent), (*self).right_child(parent)) {
+        match (self.left_child(parent), self.right_child(parent)) {
             (None, None)        => return,
             (None, Some(right)) => panic!("Heap can't only have right child."),
             (Some(left), None)  => {
-                if (*self).is_violating(parent, left) {
-                    (*self).swap_down(parent, left)
+                if self.is_violating(parent, left) {
+                    self.swap_down(parent, left)
                 }
             },
             (Some(left), Some(right)) => {
-                match ((*self).is_violating(parent, left),
-                       (*self).is_violating(parent, right)) {
+                match (self.is_violating(parent, left),
+                       self.is_violating(parent, right)) {
                     (false, false) => return,
-                    (false, true)  => (*self).swap_down(parent, right),
-                    (true,  false) => (*self).swap_down(parent, left),
+                    (false, true)  => self.swap_down(parent, right),
+                    (true,  false) => self.swap_down(parent, left),
                     (true,  true)  => {
                         // Since both of the parent's children are violating
                         // the heap property, choose which child should be
@@ -198,10 +198,10 @@ impl<T: Ord> Heap<T> {
                         // will not be violated after the swap. (That is, the
                         // greater of the two will need to become the parent of
                         // the other.)
-                        if (*self).store[left] >= (*self).store[right] {
-                            (*self).swap_down(parent, left)
+                        if self.store[left] >= self.store[right] {
+                            self.swap_down(parent, left)
                         } else {
-                            (*self).swap_down(parent, right)
+                            self.swap_down(parent, right)
                         }
                     }
                 }
@@ -211,8 +211,8 @@ impl<T: Ord> Heap<T> {
 
     /// Helper function for `percolate_down()`.
     fn swap_down(&mut self, parent: NodeIdx, child: NodeIdx) {
-        (*self).swap(parent, child);
-        (*self).percolate_down(child);
+        self.swap(parent, child);
+        self.percolate_down(child);
     }
 
     /// Checks to see whether the given parent-child nodes are violating the
@@ -221,15 +221,15 @@ impl<T: Ord> Heap<T> {
     /// Panics if either index is out of bounds. Panics if the given parent is
     /// not actually the parent of the given child.
     fn is_violating(&self, parent: NodeIdx, child: NodeIdx) -> bool{
-        if parent == (*self).parent(child).unwrap() {
-            (*self).store[parent] < (*self).store[child]
+        if parent == self.parent(child).unwrap() {
+            self.store[parent] < self.store[child]
         } else {
             panic!("Given parent is not actually the parent of this child.")
         }
     }
 
     fn is_valid(&self, idx: NodeIdx) -> bool {
-        idx < (*self).store.len()
+        idx < self.store.len()
     }
 
     /// Swaps the data stored at the two inciated heap nodes.
