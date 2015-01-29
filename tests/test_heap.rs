@@ -1,6 +1,18 @@
 extern crate algorst;
+extern crate graphviz;
 
 use algorst::heap::Heap;
+use std::old_io::Writer;
+use std::old_io::{File, Open, ReadWrite};
+
+fn make_heap() -> Heap<u32> {
+    let mut heap: Heap<u32> = Heap::new();
+    let to_add = vec!(42, 342, 352, 541, 511, 0, 531, 342);
+    for idx in (0..to_add.len()) {
+        heap.push(to_add[idx]);
+    }
+    heap
+}
 
 #[test]
 fn test_single_push() {
@@ -36,4 +48,17 @@ fn test_more_push_and_pop() {
     }
 
     assert!(heap.empty());
+}
+
+#[test]
+fn test_graphviz_render() {
+    let heap = make_heap();
+
+    let p = Path::new("tests/logs/heap.dot");
+    let mut dot_file = match File::create(&p) {
+        Ok(f) => f,
+        Err(e) => panic!("file error: {}", e),
+    };
+
+    graphviz::render(&heap, &mut dot_file);
 }

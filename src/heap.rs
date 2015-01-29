@@ -29,31 +29,24 @@
 // as a guide while implementing this module.
 
 extern crate graphviz;
+extern crate core;
 
 use std;
 use std::ptr;
 use std::fmt;
-use std::io;
-//use graphviz as dot;
+use std::fmt::Debug;
+use self::core::borrow::IntoCow;
 
-type NodeIdx = usize;
+pub type NodeIdx = usize;
 
 pub struct Heap<T: Ord> {
     store: Vec<T>,
 }
 
+#[derive(Debug)]
 enum ChildType {
     Left,
     Right
-}
-
-impl fmt::String for ChildType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ChildType::Left  => write!(f, "Left"),
-            ChildType::Right => write!(f, "Right")
-        }
-    }
 }
 
 fn left_child(i: NodeIdx) -> NodeIdx {
@@ -148,7 +141,7 @@ impl<T: Ord> Heap<T> {
                 None
             }
         } else {
-            panic!("Heap.child({}, {}): the given `idx` is not in the Heap.",
+            panic!("Heap.child({:?}, {:?}): the given `idx` is not in `Heap`.",
                    ct, parent)
         }
     }
@@ -256,14 +249,17 @@ impl<T: Ord> Heap<T> {
 
 pub type Edge = (NodeIdx, NodeIdx);
 
-impl graphviz::GraphWalk<'a> for Heap {
-    fn nodes(&'a self) -> graphviz::Nodes<'a, NodeIdx> {
-        let mut v = vec!((0..self.len()));
+impl<'a, T: Ord + 'a> graphviz::GraphWalk<'a, NodeIdx, Edge> for Heap<T> {
+    fn nodes(&self) -> graphviz::Nodes<'a, NodeIdx> {
+        let mut v: Vec<NodeIdx> = Vec::new();
+        for node_idx in (0..self.len()) {
+            v.push(node_idx);
+        }
         v.into_cow()
     }
 
     fn edges(&'a self) -> graphviz::Edges<'a, Edge> {
-        let mut v: Vec<Edge> = Vec::new(2 * self.len());
+        let mut v: Vec<Edge> = Vec::with_capacity(2 * self.len());
         // Add an edge for each parent-child relationship in the heap.
         for idx in (0..self.len()) {
             match self.left_child(idx) {
@@ -275,42 +271,38 @@ impl graphviz::GraphWalk<'a> for Heap {
                 None    => ()
             };
         }
-        v.to_cow();
+        v.into_cow()
     }
 
-    fn source(&'a self, edge: &Edge) -> NodeIdx {
+    fn source(&self, edge: &Edge) -> NodeIdx {
         let &(s, _) = edge;
         s
     }
 
-    fn target(&'a self, edge: &Edge) -> NodeIdx {
+    fn target(&self, edge: &Edge) -> NodeIdx {
         let &(_, t) = edge;
         t
     }
 }
 
-pub trait Labeller<'a> {
+impl<'a, T: 'a + Ord + fmt::Debug> graphviz::Labeller<'a, NodeIdx, Edge> for Heap<T> {
     fn graph_id(&'a self) -> graphviz::Id<'a> {
         graphviz::Id::new("Heap").unwrap()
     }
 
     fn node_id(&'a self, n: &NodeIdx) -> graphviz::Id<'a> {
-        graphviz::Id::new(format!("{}", self.store[n])).unwrap()
+        graphviz::Id::new(format!("n{}", n)).unwrap()
     }
 
     fn node_label(&'a self, n: &NodeIdx) -> graphviz::LabelText<'a> {
-        graphviz::LabelText::LabelStr(format!("n{}", n))
-    }
-
-    fn edge_label(&'a self, e: &Edge) -> graphviz::LabelText<'a> {
-        graphviz::LabelText::LabelStr("")
+        let label = format!("{:?}", self.store[*n]);
+        graphviz::LabelText::LabelStr(label.into_cow())
     }
 }
 
 
-
 /*
-impl fmt::String for Heap {
+impl fmt::Debug for Heap {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ChildType::Left  => write!(f, "Left"),
