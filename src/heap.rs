@@ -299,18 +299,3 @@ impl<'a, T: 'a + Ord + fmt::Debug> graphviz::Labeller<'a, NodeIdx, Edge> for Hea
         graphviz::LabelText::LabelStr(label.into_cow())
     }
 }
-
-
-/*
-impl fmt::Debug for Heap {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ChildType::Left  => write!(f, "Left"),
-            ChildType::Right => write!(f, "Right")
-        }
-        if self.len() == 0 {
-            write!(f, "()")
-        }
-    }
-}
-*/
